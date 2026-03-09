@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 type GitHubRepo = {
   id: number;
@@ -71,6 +71,9 @@ function formatRelativeDate(timestamp: string) {
 }
 
 export function App() {
+  // Reduced motion preference
+  const shouldReduceMotion = useReducedMotion();
+
   // Connection inputs
   const [usernameInput, setUsernameInput] = useState(localStorage.getItem("repo-vault-user") ?? "");
   const [tokenInput, setTokenInput] = useState(localStorage.getItem("repo-vault-token") ?? "");
@@ -359,16 +362,24 @@ export function App() {
   const isConnected = !!username && repos.length > 0;
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100">
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 overflow-x-hidden">
+      {/* Skip to main content for accessibility */}
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[60] focus:bg-emerald-500 focus:text-black focus:px-4 focus:py-2 focus:text-sm">
+        Skip to main content
+      </a>
+
       {/* Toast Notifications */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none">
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col gap-2 pointer-events-none max-w-[calc(100vw-2rem)]">
         <AnimatePresence>
           {toasts.map((toast) => (
             <motion.div
               key={toast.id}
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 20 }}
+              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: 20 }}
+              transition={{ duration: shouldReduceMotion ? 0.1 : 0.25 }}
+              role="status"
+              aria-live="polite"
               className={`pointer-events-auto border bg-black/80 backdrop-blur-sm px-4 py-3 text-sm font-medium tracking-wide ${
                 toast.type === "error" ? "border-red-500/50 text-red-200" :
                 toast.type === "success" ? "border-emerald-500/50 text-emerald-200" :
@@ -381,30 +392,33 @@ export function App() {
         </AnimatePresence>
       </div>
 
-      <main>
-        <section className="relative isolate min-h-screen overflow-hidden border-b border-neutral-800 px-6 pb-16 pt-10 md:px-12 lg:px-20">
+      <main id="main-content">
+        <section className="relative isolate min-h-screen overflow-hidden border-b border-neutral-800 px-4 pb-16 pt-10 sm:px-6 md:px-12 lg:px-20 2xl:px-32">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(255,255,255,0.14),transparent_45%),linear-gradient(to_bottom,#000_0%,#090909_55%,#000_100%)]" />
           <div className="poster-grid pointer-events-none absolute inset-0 opacity-30" />
 
-          <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-12">
+          <div className="relative mx-auto flex w-full max-w-6xl 2xl:max-w-7xl flex-col gap-8 sm:gap-12">
             <motion.header
-              initial={{ opacity: 0, y: -20 }}
+              initial={shouldReduceMotion ? {} : { opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="space-y-6"
+              transition={{ duration: shouldReduceMotion ? 0 : 0.6 }}
+              className="space-y-4 sm:space-y-6"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-3">
                 <p className="text-xs uppercase tracking-[0.35em] text-neutral-400">Repo Vault Archive</p>
                 {isConnected && user && (
                   <motion.div 
-                    initial={{ opacity: 0, scale: 0.9 }}
+                    initial={shouldReduceMotion ? {} : { opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className="flex items-center gap-3"
                   >
                     <img 
                       src={user.avatar_url} 
-                      alt={user.login}
+                      alt={`${user.login}'s avatar`}
                       className="w-10 h-10 rounded-full border-2 border-emerald-500/50"
+                      loading="lazy"
+                      width={40}
+                      height={40}
                     />
                     <div className="text-right">
                       <div className="text-xs uppercase tracking-[0.2em] text-emerald-400">● Connected</div>
@@ -413,7 +427,7 @@ export function App() {
                   </motion.div>
                 )}
               </div>
-              <h1 className="max-w-4xl font-['Bebas_Neue',sans-serif] text-6xl uppercase leading-[0.9] tracking-tight text-neutral-100 md:text-8xl lg:text-9xl">
+              <h1 className="max-w-4xl font-['Bebas_Neue',sans-serif] text-4xl uppercase leading-[0.9] tracking-tight text-neutral-100 sm:text-6xl md:text-8xl lg:text-9xl 2xl:text-[10rem]">
                 The Source
                 <br />
                 <span className="text-gray-500">Of Your GitHub</span>
@@ -421,28 +435,28 @@ export function App() {
               
               {isConnected && user && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={shouldReduceMotion ? {} : { opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="flex items-center gap-4"
                 >
-                  <div className="text-sm text-neutral-300">
+                  <div className="text-xs sm:text-sm text-neutral-300">
                     Viewing <span className="text-emerald-400 font-bold">{repos.length}</span> repositories for 
                     <span className="text-emerald-400 font-bold"> @{user.login}</span>
                   </div>
                 </motion.div>
               )}
               
-              <p className="max-w-2xl text-sm uppercase tracking-[0.2em] text-neutral-300 md:text-base">
+              <p className="max-w-2xl text-xs sm:text-sm uppercase tracking-[0.2em] text-neutral-300 md:text-base">
                 A monochrome explorer for repositories, readmes, live pages, and action pipelines. Auto-synced every 24 hours.
               </p>
             </motion.header>
 
             <motion.form
               onSubmit={onConnect}
-              initial={{ opacity: 0, y: 20 }}
+              initial={shouldReduceMotion ? {} : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="grid gap-3 border-y border-neutral-700 py-4 md:grid-cols-[1fr_1fr_auto_auto]"
+              transition={{ duration: shouldReduceMotion ? 0 : 0.6, delay: shouldReduceMotion ? 0 : 0.2 }}
+              className="grid gap-3 border-y border-neutral-700 py-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-[1fr_1fr_auto_auto]"
             >
               <div className="relative">
                 <input
@@ -455,6 +469,7 @@ export function App() {
                   }`}
                   placeholder={displayName !== "OCTOCAT" ? displayName : "GitHub username"}
                   aria-label="GitHub username"
+                  autoComplete="username"
                   readOnly={isConnected}
                   disabled={isConnected}
                 />
@@ -549,7 +564,7 @@ export function App() {
           </div>
         </section>
 
-        <section className="mx-auto w-full max-w-6xl px-6 py-12 md:px-12 lg:px-20">
+        <section className="mx-auto w-full max-w-6xl 2xl:max-w-7xl px-4 py-8 sm:px-6 sm:py-12 md:px-12 lg:px-20 2xl:px-32">
           {loading && (
             <motion.div 
               initial={{ opacity: 0 }} 
@@ -573,7 +588,10 @@ export function App() {
             <motion.ul
               initial="hidden"
               animate="visible"
-              variants={{
+              variants={shouldReduceMotion ? {
+                hidden: { opacity: 1 },
+                visible: { opacity: 1 },
+              } : {
                 hidden: { opacity: 0 },
                 visible: { opacity: 1, transition: { staggerChildren: 0.03 } },
               }}
@@ -585,18 +603,18 @@ export function App() {
 
                 return (
                   <motion.li
-                    variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
+                    variants={shouldReduceMotion ? { hidden: { opacity: 1 }, visible: { opacity: 1 } } : { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
                     key={repo.id}
-                    className="grid gap-4 py-4 md:grid-cols-[2fr_1fr_auto] md:items-center hover:bg-white/5 transition-colors px-2 -mx-2"
+                    className="grid gap-3 sm:gap-4 py-4 sm:grid-cols-[2fr_1fr] md:grid-cols-[2fr_1fr_auto] md:items-center hover:bg-white/5 transition-colors px-2 -mx-2"
                   >
-                    <div>
+                    <div className="min-w-0">
                       <button
                         onClick={() => openRepoDetail(repo)}
-                        className="text-left font-['Bebas_Neue',sans-serif] text-3xl uppercase leading-none tracking-wide text-neutral-100 transition hover:text-emerald-400 hover:translate-x-1 transform duration-200"
+                        className="text-left font-['Bebas_Neue',sans-serif] text-2xl sm:text-3xl uppercase leading-none tracking-wide text-neutral-100 transition-[color,transform] hover:text-emerald-400 hover:translate-x-1 transform duration-200 will-change-transform truncate max-w-full block"
                       >
                         <HighlightText text={repo.name} query={queryLower} />
                       </button>
-                      <p className="mt-1 text-sm text-neutral-400 line-clamp-2">
+                      <p className="mt-1 text-xs sm:text-sm text-neutral-400 line-clamp-2">
                         {repo.description ? (
                           <HighlightText text={repo.description} query={queryLower} />
                         ) : (
@@ -611,13 +629,13 @@ export function App() {
                       <p>Updated {formatRelativeDate(repo.updated_at)}</p>
                     </div>
 
-                    <div className="flex flex-wrap justify-start gap-2 md:justify-end">
+                    <div className="flex flex-wrap justify-start gap-2 md:justify-end sm:col-span-2 md:col-span-1">
                       {pagesUrl && (
                         <a
                           href={pagesUrl}
                           target="_blank"
                           rel="noreferrer noopener"
-                          className="border border-neutral-600 px-3 py-2 text-xs uppercase tracking-[0.18em] transition hover:border-emerald-500 hover:bg-emerald-500 hover:text-black"
+                          className="border border-neutral-600 px-3 py-2 text-xs uppercase tracking-[0.18em] transition-colors hover:border-emerald-500 hover:bg-emerald-500 hover:text-black"
                         >
                           Open site
                         </a>
@@ -626,7 +644,7 @@ export function App() {
                         href={`https://github.com/${repo.full_name}/actions`}
                         target="_blank"
                         rel="noreferrer noopener"
-                        className="border border-neutral-600 px-3 py-2 text-xs uppercase tracking-[0.18em] transition hover:border-neutral-100 hover:bg-neutral-100 hover:text-black"
+                        className="border border-neutral-600 px-3 py-2 text-xs uppercase tracking-[0.18em] transition-colors hover:border-neutral-100 hover:bg-neutral-100 hover:text-black"
                       >
                         Actions
                       </a>
@@ -634,7 +652,7 @@ export function App() {
                         href={repo.html_url}
                         target="_blank"
                         rel="noreferrer noopener"
-                        className="border border-neutral-600 px-3 py-2 text-xs uppercase tracking-[0.18em] transition hover:border-neutral-100 hover:bg-neutral-100 hover:text-black"
+                        className="border border-neutral-600 px-3 py-2 text-xs uppercase tracking-[0.18em] transition-colors hover:border-neutral-100 hover:bg-neutral-100 hover:text-black"
                       >
                         Repo
                       </a>
@@ -647,48 +665,69 @@ export function App() {
         </section>
       </main>
 
+      <footer className="border-t border-neutral-800 px-4 py-6 sm:px-6 md:px-12 lg:px-20 2xl:px-32">
+        <div className="mx-auto max-w-6xl 2xl:max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs uppercase tracking-[0.2em] text-neutral-500">
+          <p>Repo Vault Archive &copy; {new Date().getFullYear()}</p>
+          <p>Built with React, Vite &amp; Tailwind CSS</p>
+        </div>
+      </footer>
+
       <AnimatePresence>
         {selectedRepo && (
-          <motion.aside
-            initial={{ opacity: 0, x: 80 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 80 }}
-            transition={{ duration: 0.25 }}
-            className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl overflow-hidden border-l border-neutral-700 bg-black"
-          >
-            <div className="flex h-full flex-col">
-              <div className="flex items-start justify-between border-b border-neutral-800 p-6">
-                <div className="pr-4">
-                  <p className="text-xs uppercase tracking-[0.24em] text-neutral-500">Repository Detail</p>
-                  <h2 className="font-['Bebas_Neue',sans-serif] text-5xl uppercase tracking-wide break-words">{selectedRepo.name}</h2>
-                  <p className="text-sm text-neutral-400 mt-1">{selectedRepo.description ?? "No description available."}</p>
-                  <div className="mt-2 flex gap-3 text-xs uppercase tracking-[0.16em] text-neutral-500">
-                    <span>{selectedRepo.language ?? "No language"}</span>
-                    <span>•</span>
-                    <span>{selectedRepo.stargazers_count.toLocaleString()} stars</span>
+          <>
+            {/* Overlay backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedRepo(null)}
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+              aria-hidden="true"
+            />
+            <motion.aside
+              initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: 80 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: 80 }}
+              transition={{ duration: shouldReduceMotion ? 0.1 : 0.25, ease: "easeOut" }}
+              role="dialog"
+              aria-label={`Details for ${selectedRepo.name}`}
+              className="fixed inset-y-0 right-0 z-50 w-full sm:max-w-lg md:max-w-2xl overflow-hidden border-l border-neutral-700 bg-black will-change-transform"
+            >
+              <div className="flex h-full flex-col">
+                <div className="flex items-start justify-between border-b border-neutral-800 p-4 sm:p-6">
+                  <div className="pr-4 min-w-0">
+                    <p className="text-xs uppercase tracking-[0.24em] text-neutral-500">Repository Detail</p>
+                    <h2 className="font-['Bebas_Neue',sans-serif] text-3xl sm:text-5xl uppercase tracking-wide break-words">{selectedRepo.name}</h2>
+                    <p className="text-xs sm:text-sm text-neutral-400 mt-1">{selectedRepo.description ?? "No description available."}</p>
+                    <div className="mt-2 flex gap-3 text-xs uppercase tracking-[0.16em] text-neutral-500 flex-wrap">
+                      <span>{selectedRepo.language ?? "No language"}</span>
+                      <span>•</span>
+                      <span>{selectedRepo.stargazers_count.toLocaleString()} stars</span>
+                    </div>
                   </div>
+                  <button
+                    onClick={() => setSelectedRepo(null)}
+                    className="border border-neutral-700 px-4 py-2 text-xs uppercase tracking-[0.2em] transition-colors hover:border-neutral-100 shrink-0"
+                    aria-label="Close detail panel"
+                  >
+                    Close
+                  </button>
                 </div>
-                <button
-                  onClick={() => setSelectedRepo(null)}
-                  className="border border-neutral-700 px-4 py-2 text-xs uppercase tracking-[0.2em] transition hover:border-neutral-100 shrink-0"
-                >
-                  Close
-                </button>
-              </div>
 
-              <div className="overflow-y-auto p-6 flex-1">
-                {readmeLoading ? (
-                  <div className="space-y-3">
-                    <div className="h-4 bg-neutral-800 rounded animate-pulse w-3/4" />
-                    <div className="h-4 bg-neutral-800 rounded animate-pulse w-1/2" />
-                    <div className="h-4 bg-neutral-800 rounded animate-pulse w-5/6" />
-                  </div>
-                ) : (
-                  <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed text-neutral-300">{readme}</pre>
-                )}
+                <div className="overflow-y-auto p-4 sm:p-6 flex-1 overscroll-contain">
+                  {readmeLoading ? (
+                    <div className="space-y-3" role="status" aria-label="Loading README">
+                      <div className="h-4 bg-neutral-800 rounded animate-pulse w-3/4" />
+                      <div className="h-4 bg-neutral-800 rounded animate-pulse w-1/2" />
+                      <div className="h-4 bg-neutral-800 rounded animate-pulse w-5/6" />
+                    </div>
+                  ) : (
+                    <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed text-neutral-300 overflow-x-auto">{readme}</pre>
+                  )}
+                </div>
               </div>
-            </div>
-          </motion.aside>
+            </motion.aside>
+          </>
         )}
       </AnimatePresence>
     </div>
